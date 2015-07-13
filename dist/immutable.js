@@ -1315,7 +1315,9 @@
 
     var sliceSeq = makeSequence(iterable);
 
-    sliceSeq.size = sliceSize;
+    // If iterable.size is undefined, the size of the realized sliceSeq is
+    // unknown at this point unless the number of items to slice is 0
+    sliceSeq.size = sliceSize === 0 ? sliceSize : iterable.size && sliceSize || undefined;
 
     if (!useKeys && isSeq(iterable) && sliceSize >= 0) {
       sliceSeq.get = function (index, notSetValue) {
@@ -1764,7 +1766,7 @@
 
     function src_Map__Map(value) {
       return value === null || value === undefined ? emptyMap() :
-        isMap(value) ? value :
+        isMap(value) && !isOrdered(value) ? value :
         emptyMap().withMutations(function(map ) {
           var iter = KeyedIterable(value);
           assertNotInfinite(iter.size);
@@ -3529,7 +3531,7 @@
 
     function src_Set__Set(value) {
       return value === null || value === undefined ? emptySet() :
-        isSet(value) ? value :
+        isSet(value) && !isOrdered(value) ? value :
         emptySet().withMutations(function(set ) {
           var iter = SetIterable(value);
           assertNotInfinite(iter.size);
@@ -4274,10 +4276,6 @@
       return reify(this, concatFactory(this, values));
     },
 
-    contains: function(searchValue) {
-      return this.includes(searchValue);
-    },
-
     includes: function(searchValue) {
       return this.some(function(value ) {return is(value, searchValue)});
     },
@@ -4490,6 +4488,7 @@
     },
 
     isSuperset: function(iter) {
+      iter = typeof iter.isSubset === 'function' ? iter : Iterable(iter);
       return iter.isSubset(this);
     },
 
@@ -4589,6 +4588,7 @@
   IterablePrototype.inspect =
   IterablePrototype.toSource = function() { return this.toString(); };
   IterablePrototype.chain = IterablePrototype.flatMap;
+  IterablePrototype.contains = IterablePrototype.includes;
 
   // Temporary warning about using length
   (function () {
